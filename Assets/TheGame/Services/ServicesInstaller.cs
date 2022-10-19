@@ -22,11 +22,6 @@ public class ServicesInstaller : MonoInstaller
         Container.Bind<IPoolController>().To<PoolController>().AsSingle();
         Container.Bind<IGameplayController>().To<GameplayController>().AsSingle();
 
-        Container.BindFactory<Player
-                             , GameplayController
-                             , GameplayController.IndividualSubcontroller
-                             , GameplayController.IndividualSubcontroller.Factory>()
-                             .AsSingle();
         Container.Bind<IEventBus>().To<EventBus>().AsSingle();
     }
 

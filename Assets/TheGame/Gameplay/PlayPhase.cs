@@ -1,14 +1,11 @@
 ﻿namespace TheGame
 {
-    public enum PlayPhase
+    public enum RoundStates
     {
-        enter,
-        preparing,
-        targeting,
-        active,
-        rewarding,
-        boosting,
-        waiting
+        Prepare,
+        Action,
+        Rewarding,
+        Complete
     }
 }
 

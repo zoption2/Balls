@@ -6,14 +6,14 @@ using Zenject;
 
 namespace TheGame
 {
-    public partial class GameplayController : IGameplayController
+    public class GameplayController : IGameplayController
     {
-        private Dictionary<IIdentifiers, IndividualSubcontroller> players = new Dictionary<IIdentifiers, IndividualSubcontroller>();
-        private PlayPhase currentPlayPhase;
+        private Dictionary<IIdentifiers, IndividualPlayController> players = new();
+        private RoundStates currentPlayPhase;
         private IEventBus eventBus;
         private IFieldFactory fieldFactory;
         private IPlayerFactory playerFactory;
-        private IndividualSubcontroller.Factory subcontrolFactory;
+        private IPersonalController _individualController;
         private GameSettings settings;
         private Dictionary<int, Team> teams = new Dictionary<int, Team>();
         private Field[] fields;
@@ -26,16 +26,14 @@ namespace TheGame
         public Action<int> OnTeamCompletePhase;
         public Action OnAllCompletePhase;
 
-        [Inject]
-        private void Inject(IEventBus eventBus
-                          , IndividualSubcontroller.Factory subcontrolFactory
+        public GameplayController(IEventBus eventBus
                           , IFieldFactory fieldFactory
                           , IPlayerFactory playerFactory)
         {
             this.eventBus = eventBus;
-            this.subcontrolFactory = subcontrolFactory;
             this.fieldFactory = fieldFactory;
             this.playerFactory = playerFactory;
+
             OnEnable();
         }
 
@@ -71,7 +69,7 @@ namespace TheGame
             }
         }
 
-        public void AddPlayer(Player player)
+        public void AddPlayer(PlayerView player)
         {
             var key = player.Identifiers;
             if (players.ContainsKey(key))
@@ -80,7 +78,7 @@ namespace TheGame
                 return;
             }
 
-            var newPlayer = subcontrolFactory.Create(player, this);
+            var newPlayer = new IndividualPlayController(this);
             players.Add(key, newPlayer);
 
             if (!teams.ContainsKey(key.TeamID))
@@ -123,38 +121,27 @@ namespace TheGame
         }
     }
 
-    public interface IIndividualController
+    public interface IPersonalController
     {
         bool IsPhaseComplete { get; }
-        IGameplayStatesAccessor States { get; }
         void ChangeState(GameplayState state);
         void CompleteStateImmediately();
     }
 
-    public interface IGameplayStatesAccessor
-    {
-        EnterGameplayState EnterState { get; }
-        PreparingGameplayState PreparingState { get; }
-        TargetingGameplayState TargetingState { get; }
-        ActiveGameplayState ActiveState { get; }
-        RewardingGameplayerState RewardingState { get; }
-        BoostingGameplayState BoostingState { get; }
-        WaitingGameplayState WaitingState { get; }
-    }
 
     public interface IGameplayController
     {
         public void Initialize(GameSettings settings, Action OnComplete);
-        public void AddPlayer(Player player);
+        public void AddPlayer(PlayerView player);
         public void StartGame();
     }
 
 
     public class Team
     {
-        private List<IIndividualController> players = new List<IIndividualController>();
+        private List<IPersonalController> players = new List<IPersonalController>();
         private int teamID;
-        public IReadOnlyList<IIndividualController> Players => Players;
+        public IReadOnlyList<IPersonalController> Players => Players;
         public int TeamID => teamID;
 
         public Team(int id)
@@ -162,7 +149,7 @@ namespace TheGame
             teamID = id;
         }
 
-        public void AddPlayer(IIndividualController player)
+        public void AddPlayer(IPersonalController player)
         {
             if (!players.Contains(player))
             {
@@ -170,7 +157,7 @@ namespace TheGame
             }
         }
 
-        public void RemovePlayer(IIndividualController player)
+        public void RemovePlayer(IPersonalController player)
         {
             if (players.Contains(player))
             {

@@ -11,7 +11,7 @@ namespace TheGame
         [SerializeField] private Transform startPoint;
 
         [Inject] private IGameplayController gameplayController;
-        [Inject] private Player testPlayer;
+        [Inject] private PlayerView testPlayer;
 
         private void Start()
         {

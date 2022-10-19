@@ -8,13 +8,12 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace TheGame
 {
-    public class AddressablesFactory<T1, T2> : MonoBehaviour, IAddressableFactory<T1, T2> where T1 : UnityEngine.Object where T2 : Enum
+    public class AddressablesFactory<TObject, TType> : MonoBehaviour, IAddressableFactory<TObject, TType> where TObject : UnityEngine.Object where TType : Enum
     {
-        [SerializeField] private Data<T2>[] data;
-        private Dictionary<T2, T1> loaded = new Dictionary<T2, T1>();
+        [SerializeField] private Data<TType>[] data;
+        private Dictionary<TType, TObject> loaded = new();
 
-
-        public async Task<T1> GetPrefab(T2 type)
+        public async Task<TObject> GetPrefab(TType type)
         {
             if (loaded.ContainsKey(type))
             {
@@ -28,17 +27,16 @@ namespace TheGame
                     await opHandle.Task;
                     if (opHandle.Status == AsyncOperationStatus.Succeeded)
                     {
-                        if (opHandle.Result.TryGetComponent(out T1 product))
+                        if (opHandle.Result.TryGetComponent(out TObject product))
                         {
-                            if (!loaded.ContainsKey(type))
-                            {
-                                loaded.Add(type, product);
-                            }
+                            loaded.Add(type, product);
                             return loaded[type];
                         }
                         else
                         {
-                            throw new MissingComponentException();
+                            throw new MissingComponentException(
+                                string.Format("Component {0} at GameObject {1} is missing", typeof(TObject), nameof(opHandle.Result))
+                                ) ;
                         }
                     }
                 }
@@ -46,19 +44,39 @@ namespace TheGame
 
             throw new System.ArgumentNullException();
         }
+
+        public void ReleasePrefab(TType type)
+        {
+            if (loaded.ContainsKey(type))
+            {
+                Addressables.Release(loaded[type]);
+                loaded.Remove(type);
+            }
+        }
+
+        public void Clear()
+        {
+            foreach (var prefab in loaded.Values)
+            {
+                Addressables.Release(prefab);
+            }
+            loaded.Clear();
+        }
  
 
         [System.Serializable]
-        public class Data<T3> where T3 : T2
+        public class Data<TPreciseType> where TPreciseType : TType
         {
-            [field: SerializeField] public T3 Type;
+            [field: SerializeField] public TPreciseType Type;
             [field: SerializeField] public AssetReferenceGameObject referance { get; private set; }
         }
     }
 
-    public interface IAddressableFactory<T1, T2> where T1 : UnityEngine.Object where T2 : Enum
+    public interface IAddressableFactory<TObject, TType> where TObject : UnityEngine.Object where TType : Enum
     {
-        Task<T1> GetPrefab(T2 type);
+        Task<TObject> GetPrefab(TType type);
+        void ReleasePrefab(TType type);
+        void Clear();
     }
 }
 

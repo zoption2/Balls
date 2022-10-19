@@ -3,19 +3,50 @@ using System.Threading.Tasks;
 
 namespace TheGame
 {
-    public abstract class GameplayState : State
+    public interface IGameplayStateMachine : IStateMachine<RoundStates>
     {
-        public abstract PlayPhase playPhase { get; }
-        public abstract bool NeedWaitTeamCompletedPhase { get; }
-        public abstract bool NeedWaitAllCompletedPhase { get; }
+        IPersonalController GetController();
+        IEventBus GetEventBus();
+        void CompleteStateImmediately();
+    }
 
-        protected IIndividualController playerController;
-        protected IEventBus eventBus;
-
-        public GameplayState(IIndividualController playerController, IEventBus eventBus)
+    public class GameplayStateMachine : BaseStateMachine<RoundStates>, IGameplayStateMachine
+    {
+        private IPersonalController _individualController;
+        private IEventBus _eventBus;
+        public GameplayStateMachine(IPersonalController individualController, IEventBus eventBus)
         {
-            this.playerController = playerController;
-            this.eventBus = eventBus;
+            _individualController = individualController;
+            _eventBus = eventBus;
+        }
+
+        public void CompleteStateImmediately()
+        {
+            _individualController.CompleteStateImmediately();
+        }
+
+        public IPersonalController GetController()
+        {
+            return _individualController;
+        }
+
+        public IEventBus GetEventBus()
+        {
+            return _eventBus;
+        }
+    }
+
+    public abstract class GameplayState : BaseState<RoundStates>
+    {
+        protected IGameplayStateMachine _machine;
+        protected IPersonalController _personalController;
+        protected IEventBus _eventBus;
+
+        public GameplayState(IGameplayStateMachine machine)
+        {
+            _machine = machine;
+            _personalController = _machine.GetController();
+            _eventBus = _machine.GetEventBus();
         }
 
         public override void Enter()
@@ -27,129 +58,59 @@ namespace TheGame
         public abstract void CompletePhase();
     }
 
-    public class EnterGameplayState : GameplayState
+    public class PrepareRoundState : GameplayState
     {
-        public override PlayPhase playPhase => PlayPhase.enter;
-        public override bool NeedWaitTeamCompletedPhase => true;
-        public override bool NeedWaitAllCompletedPhase => true;
-
-        public EnterGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
+        public PrepareRoundState(IGameplayStateMachine machine) : base(machine)
         {
         }
 
-        public override async void Enter()
-        {
-            base.Enter();
-            //await Task.Delay(2000);
-            playerController.CompleteStateImmediately();
-        }
+        public override RoundStates State => RoundStates.Prepare;
 
         public override void CompletePhase()
         {
-            playerController.ChangeState(playerController.States.PreparingState);
+            throw new System.NotImplementedException();
         }
     }
 
-    public class PreparingGameplayState : GameplayState
+    public class ActionRoundState : GameplayState
     {
-        public PreparingGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
+        public ActionRoundState(IGameplayStateMachine machine) : base(machine)
         {
         }
 
-        public override PlayPhase playPhase => PlayPhase.preparing;
-        public override bool NeedWaitTeamCompletedPhase => true;
-        public override bool NeedWaitAllCompletedPhase => true;
-
-        public override async void Enter()
-        {
-            base.Enter();
-            //await Task.Delay(2000);
-            playerController.CompleteStateImmediately();
-        }
+        public override RoundStates State => RoundStates.Action;
 
         public override void CompletePhase()
         {
-            playerController.ChangeState(playerController.States.TargetingState);
+            throw new System.NotImplementedException();
         }
     }
 
-    public class TargetingGameplayState : GameplayState
+    public class RewardingRoundState : GameplayState
     {
-        public TargetingGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
+        public RewardingRoundState(IGameplayStateMachine machine) : base(machine)
         {
         }
 
-        public override PlayPhase playPhase => PlayPhase.targeting;
-        public override bool NeedWaitTeamCompletedPhase => false;
-        public override bool NeedWaitAllCompletedPhase => false;
+        public override RoundStates State => RoundStates.Rewarding;
 
         public override void CompletePhase()
         {
-            playerController.ChangeState(playerController.States.ActiveState);
+            throw new System.NotImplementedException();
         }
     }
 
-    public class ActiveGameplayState : GameplayState
+    public class CompleteRoundState : GameplayState
     {
-        public ActiveGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
+        public CompleteRoundState(IGameplayStateMachine machine) : base(machine)
         {
         }
 
-        public override PlayPhase playPhase => PlayPhase.active;
-        public override bool NeedWaitTeamCompletedPhase => true;
-        public override bool NeedWaitAllCompletedPhase => false;
+        public override RoundStates State => RoundStates.Complete;
 
         public override void CompletePhase()
         {
-            playerController.ChangeState(playerController.States.RewardingState);
-        }
-    }
-
-    public class RewardingGameplayerState : GameplayState
-    {
-        public RewardingGameplayerState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
-        {
-        }
-
-        public override PlayPhase playPhase => PlayPhase.rewarding;
-        public override bool NeedWaitTeamCompletedPhase => true;
-        public override bool NeedWaitAllCompletedPhase => false;
-
-        public override void CompletePhase()
-        {
-            playerController.ChangeState(playerController.States.BoostingState);
-        }
-    }
-
-    public class BoostingGameplayState : GameplayState
-    {
-        public BoostingGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
-        {
-        }
-
-        public override PlayPhase playPhase => PlayPhase.boosting;
-
-        public override bool NeedWaitTeamCompletedPhase => false;
-        public override bool NeedWaitAllCompletedPhase => false;
-        public override void CompletePhase()
-        {
-            playerController.ChangeState(playerController.States.WaitingState);
-        }
-    }
-
-    public class WaitingGameplayState : GameplayState
-    {
-        public WaitingGameplayState(IIndividualController playerController, IEventBus eventBus) : base(playerController, eventBus)
-        {
-        }
-
-        public override PlayPhase playPhase => PlayPhase.waiting;
-        public override bool NeedWaitTeamCompletedPhase => false;
-        public override bool NeedWaitAllCompletedPhase => true;
-
-        public override void CompletePhase()
-        {
-            playerController.ChangeState(playerController.States.PreparingState);
+            throw new System.NotImplementedException();
         }
     }
 }

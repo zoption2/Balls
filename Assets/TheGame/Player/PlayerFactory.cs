@@ -1,28 +1,21 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Zenject;
 
 namespace TheGame
 {
     public class PlayerFactory : MonoBehaviour, IPlayerFactory
     {
-        [field: SerializeField] public Player PlayerPrefab { get; private set; }
-        [Inject] private IMonoInstantiator instantiator;
+        [SerializeField] private PlayerView _playerPrefab;
 
-        public Player GetPlayer(int id, int teamID, Vector2 position)
+        public IPlayerView GetPlayer(Vector2 position, Transform parent = null)
         {
-            var instance = instantiator.CreateObject(PlayerPrefab, position);
-            var player = instance.GetComponent<Player>();
-            Identifiers identifiers = new Identifiers(id, teamID);
-            player.Initialize(identifiers);
+            var player = Instantiate(_playerPrefab, position, Quaternion.identity, parent);
             return player;
         }
     }
 
     public interface IPlayerFactory
     {
-        Player GetPlayer(int id, int teamID, Vector2 position);
+        IPlayerView GetPlayer(Vector2 position, Transform parent = null);
     }
 }
 

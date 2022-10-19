@@ -2,9 +2,9 @@
 {
     public class GameplayPhaseCompleteArgs : GameEventArgs
     {
-        public PlayPhase Phase { get; }
+        public RoundStates Phase { get; }
         public IIdentifiers Identifiers { get; }
-        public GameplayPhaseCompleteArgs(IIdentifiers identifiers, PlayPhase phase)
+        public GameplayPhaseCompleteArgs(IIdentifiers identifiers, RoundStates phase)
         {
             Identifiers = identifiers;
             Phase = phase;
